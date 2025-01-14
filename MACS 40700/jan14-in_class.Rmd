@@ -1,0 +1,84 @@
+---
+title: "jan14-in_class"
+output: html_document
+---
+
+```{r packages}
+# load packages
+library(tidyverse)
+
+#professional to write code to distribute that does not automatically install anything onto their advice or any install needs to be commented out like below
+# remotes::install_github("MACS40700/c3s2")
+#library(c3s2)
+
+library(rcis)
+glimpse(scorecard)
+
+```
+
+```{r ggplot2 theme}
+# set default theme for ggplot2
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 16))
+```
+
+```{r figure sizing}
+# set default figure parameters for knitr
+knitr::opts_chunk$set(
+  fig.width = 8, # 8"
+  fig.asp = 0.618, # the golden ratio
+  fig.retina = 2, # dpi multiplier for displaying HTML output on retina
+  dpi = 150, # higher dpi, sharper image
+  out.width = "70%"
+)
+```
+
+```{r, eval = FALSE}
+#heading tells R not to run code - shows code formatting 
+```
+
+###Example in global v. local mapping
+
+```{r new variables}
+scorecard <- scorecard %>%
+  mutate(pctpell_cat = cut_interval(x = pctpell, n = 6)) %>%
+  drop_na(pctpell_cat)
+scorecard %>%
+  count(pctpell_cat)
+mean_netcost_pctpell <- scorecard %>%
+  group_by(pctpell_cat) %>%
+  summarise(mean_netcost = mean(netcost, na.rm = TRUE))
+mean_netcost_pctpell
+
+```
+
+```{r Plot A - I}
+# Plot A 
+ggplot(scorecard, aes(x = avgfacsal, y = netcost, color = pctpell_cat)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5)
+```
+
+```{r Plot B - I}
+# Plot B 
+ggplot(scorecard, aes(x = avgfacsal, y = netcost)) +
+  geom_point(aes(color = pctpell_cat), alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5)
+
+#could specify color in geom_smooth to create the color specific regression lines
+```
+```{r example 2}
+
+
+# Plot A
+ggplot(scorecard, aes(x = avgfacsal, y = netcost)) +
+  geom_point(aes(color = pctpell_cat))
+
+# Plot B
+ggplot(scorecard, aes(x = avgfacsal, y = netcost)) +
+  geom_point(color = "blue")
+
+# Plot C
+ggplot(scorecard, aes(x = avgfacsal, y = netcost)) +
+  geom_point(color = "#a493ba")
+```
+
