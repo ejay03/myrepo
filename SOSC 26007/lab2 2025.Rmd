@@ -1,0 +1,250 @@
+---
+title: "Lab 2 Notes"
+author: "Overview of Quantitative Methods"
+output: 
+  pdf_document: default
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+---
+
+# Data manipulation & Tidyverse
+
+We can make our R experience much more pleasant with user-made libraries:
+```{r}
+#install.packages("readxl")
+#install.packages("tidyverse")
+library(readxl)
+#(this is considered bad taste btw, and it's better to load only the tidyverse packages you need)
+library(tidyverse)
+```
+
+We will work with the data from the [American coffee preference test](https://www.youtube.com/watch?v=bMOOQfeloH0) this time.
+```{r}
+gact <- read_xlsx("GACTT_RESULTS_ANONYMIZED_LAB2.xlsx")
+gact_codebook <- read_xlsx("GACTT_RESULTS_ANONYMIZED_LAB2.xlsx", 
+                           sheet = "codebook") #to read particular xlsx sheet
+head(gact_codebook)
+glimpse(gact)
+```
+Tidyverse is the set of libraries which make R lot cooler. For example, it has the pipe `%>%` which applies function to object:
+```{r}
+gact %>% head(3)
+head(gact, 3) #equivalent
+```
+Tidyverse also introduces a ton of functions for data manipulation (with pipe we don't change the original object):
+```{r}
+select(gact, submission_id)
+gact %>% select(submission_id)
+gact %>% rename(submission_ID = submission_id)
+
+gact %>% filter(age == "18-24 years old")
+gact %>% filter(age == "18-24 years old" & cups >= 3.0) #what's the problem here?
+
+table(gact$cups) #`cups` has weird categories while substantially it is a number
+#how to recode strings:
+gact$cups_number <- gact$cups %>% recode("Less than 1" = '0', "More than 4" = '5')
+#time to change type:
+gact %>% mutate(cups_num = as.numeric(cups_number),
+                cups_norm = cups_num - mean(cups_num, na.rm = T)) #remove NA = TRUE
+gact$cups_num <- as.numeric(gact$cups_number)
+
+gact %>% arrange(cups_num, desc = T)
+```
+With pipe we can also beautifully chain functions (you can think of the syntax as and SQL query)
+```{r}
+#let's also create the numeric column for age
+table(gact$age)
+
+gact %>% 
+  select(submission_id, cups_num, age) %>% 
+  filter(cups_num >= 3) %>% 
+  mutate(age_num = str_remove(age, " years old"))
+
+#equivalent to, but more readable!
+mutate(filter(select(gact, submission_id, cups_num, age), cups_num >= 3), 
+       age_num = str_remove(age, " years old"))
+
+gact$age_num <- gact$age %>% 
+  recode("<18 years old" = 18, 
+         ">65 years old" = 65, 
+         "18-24 years old" = 21, 
+         "25-34 years old" = 30, 
+         "35-44 years old" = 40, 
+         "45-54 years old" = 50, 
+         "55-64 years old" = 60)
+```
+Also, we can make summaries:
+```{r}
+gact %>% 
+  summarize(mean_cups = mean(cups_num),
+            mean_cups_narm = mean(cups_num, na.rm = T),
+            median_cups = median(cups_num, na.rm = T))
+
+gact %>% 
+  group_by(gender) %>% #same, but for each gender
+  summarize(mean_cups = mean(cups_num, na.rm = T),
+            median_cups = median(cups_num, na.rm = T),
+            n_obs = n())
+
+gact %>% 
+  select(gender, age, cups_num) %>% 
+  filter(age %in% c("<18 years old", "18-24 years old", "25-34 years old")) %>% 
+  group_by(gender, age) %>% #we can group by many columns
+  summarize(mean_cups = mean(cups_num, na.rm = T),
+            median_cups = median(cups_num, na.rm = T),
+            n_obs = n())
+```
+Now to some serious things. Question "where do you drink coffee" (variable `where` in our data) is multiple-choice and the result is total mess, let's make nice dummies from it.
+```{r}
+gact %>% select(where) %>% table() %>% head()
+gact %>% 
+  drop_na(where) %>% #we don't need missing observations for this
+  select(submission_id, where) %>% 
+  separate_rows(where, sep = ",\\s*") %>% #that's regex and it's black magic
+  # we flattened our data so each submission now has as many rows as there were choices 
+  mutate(dummy = 1)
+gact %>% 
+  #drop_na(where) %>% #this time let's not drop the missing data
+  select(submission_id, where) %>% 
+  separate_rows(where, sep = ",\\s*") %>%
+  mutate(dummy = 1) %>%
+  #pivot_* is a VERY useful function for transforming your data from long to wide format or vice versa
+  pivot_wider(names_from = where, values_from = dummy, values_fill = 0) 
+```
+We can of course just mutate the original dataset, but let's also practice merging data:
+```{r}
+gact_where <- gact %>% 
+  select(submission_id, where) %>% 
+  separate_rows(where, sep = ",\\s*") %>%
+  mutate(dummy = 1) %>%
+  pivot_wider(names_from = where, values_from = dummy, values_fill = 0) %>% 
+  select(-`NA`) %>% #drop `NA` column
+  rename("where_cafe" = "At a cafe", #rename to get rid of whitespaces
+         "where_office" = "At the office",
+         "where_home" = "At home",
+         "where_go" = "On the go",
+         "where_other" = "None of these")
+
+
+gact_new <- merge(gact, gact_where, by='submission_id')
+
+# same thing
+gact <- left_join(gact, #identical to SQL left join
+                  gact_where, #to each row in gact add data from gact_where
+                  by = "submission_id") #matching by `submission_id` value
+
+```
+
+## GGplot
+Also tidyverse is home to the superior graphic device called ggplot2. It's using the following basic syntax:
+```{r, eval = F}
+ggplot(df, #data  
+       aes(x, y) #axis 
+        )+ 
+  geom_*()+ 
+  coord_*()+ #usually omitted 
+  theme_*()
+```
+
+Let's start with some quick examples
+```{R}
+ggplot(gact, aes(x = cups_num))+
+  geom_histogram(bins = 6)
+
+ggplot(gact, aes(x = age_num))+
+  geom_histogram(bins = 5)+
+  coord_flip()
+
+ggplot(gact, aes(x = gender, y = cups_num))+
+  geom_boxplot()+
+  theme_minimal() #nice minimalist theme
+
+ggplot(gact, aes(x = age_num, y = cups_num, color = gender))+
+  geom_point()+ #scatter plot
+  theme_minimal()
+
+ggplot(gact, aes(x = age_num, y = cups_num, color = gender))+
+  geom_jitter()+ #spreads the stacked points around
+  theme_minimal()
+```
+Of course, you can stack it:
+```{r}
+ggplot(gact %>% filter(gender %in% c("Female", "Male", "Non-binary")), 
+       #select gender identities with enough observations
+       aes(x = age_num, y = cups_num, color = gender))+
+  geom_jitter(alpha = 0.2)+ #alpha makes points more opaque
+  geom_smooth(method = "lm")+ #y~x fit
+  scale_color_brewer(palette = "Set1")+ #different color pre-set
+  theme_minimal()+
+  labs(title = "Age and coffee consumptions by gender",
+       subtitle = "Linear fit added",
+       x = "Age (approximate)", y = "Cups (daily)")+
+  theme(legend.position = "bottom")
+```
+
+A few notes on how to make a good plot:
+
+- always label your axis;
+
+- give all the necessary information to read the plot (like what are the units);
+
+- axis should cover the full range of possible values;
+
+- colors (if any) should be distinct;
+
+- keep it simple and don't over complicate things (i.e, having six colors for categories is a bad idea);
+
+- don't use pie charts.
+
+P.S. you can also apply ggplot to data:
+```{r}
+gact %>% 
+  filter(gender == "Female") %>% 
+  ggplot(aes(x = age_num))+
+  geom_histogram(bins = 5)+
+  theme_bw()
+```
+
+# Web-scraping
+
+Let's have a small intermezzo. Often you will find some table, text, map, or database online which you can use. Some websites provide API (which is a whole different topic), but others don't. And so you may just want to get that data, but copy-pasting it by hand is not always an option, and that's where web-scraping is useful.
+
+Some basics: websites are built using HTML markup language. The code of the page is open ("right click -> inspect" in browser), you can download it and find the elements of interest.
+
+```{r}
+#load some additional packages
+#install.packages("rvest")
+library(rvest)
+
+webpage <- read_html("https://www.presidency.ucsb.edu/statistics/elections/2024")
+#if you are interested, look more into these objects
+table_data <- html_table(html_nodes(webpage, "table"), fill = TRUE)
+elect_24 <- as.data.frame(table_data[[1]])[14:69,1:11]
+names(elect_24) <- c("state", "total_votes", 
+               "harris_votes", "harris_votes_share", "harris_ev",  
+               "trump_votes", "trump_votes_share", "trump_ev",
+               "other_votes", "other_votes_share", "other_ev")
+write_csv(elect_24, "election_2024.csv")
+head(elect_24)
+```
+
+## Merging
+
+We have the dataset with all zip codes in the US:
+```{R}
+zips <- read_csv("zip_code_database.csv")
+#did I already tell you that R has some amazing built-in functions?
+zips$state_name <- state.name[match(zips$state,state.abb)]
+head(zips)
+
+glimpse(zips)
+```
+Use `zip` variable to merge with the zip_codes dataset. Let's check what potentially matches (change eval to T if you will copying from this notebook):
+```{r, eval = F}
+table(gact$zip %in% zips$zip)
+```
+For now, we can work with proper zip codes from our data. 
+
+However, for optional practice: note that there are some shorter unmatched zip codes. You can actually link most of them to states by looking at the zip-code prefix.
