@@ -2,4 +2,138 @@
 title: "jan21-in_class"
 output: html_document
 ---
+```{r libraries}
+library(tidyverse)
+library(rcis)
+library(scales)
+```
+
+```{r slide 31}
+#Version 2
+ggplot(scorecard, aes(x = netcost, y = avgfacsal)) + 
+  geom_point(alpha = 0.5) +
+  scale_x_continuous(
+    name = "Net cost of attendance",
+    breaks = seq(from = 0, to = 60000, by = 10000),
+    limits = c(0, 60000),
+    labels = c("$0", "$10,000", "$20,000", "$30,000", "$40,000", "$50,000", "$60,000") 
+  )
+
+```
+
+```{r slide 33}
+#Final improved version
+ggplot(scorecard, aes(x = netcost, y = avgfacsal)) + 
+  geom_point(alpha = 0.5) +
+  scale_x_continuous(
+    name = "Net cost of attendance", breaks = seq(from = 0, to = 60000, by = 10000),
+    limits = c(0, 60000), labels = label_dollar()) +
+  scale_y_continuous( name = "Average faculty salary (USD)", labels = label_dollar())
+
+#see label dollar instead of specifying - allows less room for mistakes
+```
+
+##storing plots
+```{r storing plot}
+set.seed(1234)
+p_pctpell_avgfacsal_type <- ggplot(scorecard, aes(x = pctpell, y = avgfacsal)) +
+  geom_jitter(aes(color = type, shape = type), size = 2)
+p_pctpell_avgfacsal_type
+
+
+```
+
+```{r slide 35}
+#customizing axis and legend labes with scale_*
+p_pctpell_avgfacsal_type +
+  scale_x_continuous(name = "Percent of students receiving a Pell grant") + 
+  scale_y_continuous(name = "Average faculty salary (USD)") + 
+  scale_color_discrete(name = "College type") + 
+  scale_shape_discrete(name = "College type")
+```
+
+```{r slide 36} 
+#customizing axis and legend labels with labs()
+
+#separate
+p_pctpell_avgfacsal_type + labs( x = "Percent of students receiving a Pell grant",
+    y = "Average faculty salary (USD)",
+    color = "College type")
+
+#combined
+p_pctpell_avgfacsal_type + labs(  x = "Percent of students receiving a Pell grant", 
+    y = "Average faculty salary (USD)", 
+    color = "College type", 
+    shape = "College type", )
+```
+
+#Deep Dive: coordinates + facets
+```{r setup}
+#install.packages("openintro")
+#install.packages("palmerpenguins")
+#install.packages("ggrepel")
+#install.packages("broom")
+#install.packages("maps")
+#install.packages("mapproj")
+
+#load packages
+library(tidyverse)
+library(knitr)
+library(openintro)
+library(palmerpenguins)
+library(ggrepel)
+library(waffle)
+library(broom)
+
+
+#set default theme for ggplot2
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 16))
+
+#set default figure parameters for knitr
+knitr::opts_chunk$set(
+  fig.width = 8, fig.asp = 0.618, fig.retina = 2,
+  dpi = 150, out.width = "60%"
+)
+
+#dplyr print max and min
+options(dplyr.print_max = 6, dplyr.print_min = 6)
+
+```
+
+```{r waffle example}
+penguins %>%
+  count(species) %>%
+  ggplot(aes(fill = species, values = n)) +
+  geom_waffle(color = "white", flip = TRUE, make_proportional = TRUE) +
+  labs(fill = NULL, title = "Penguin species")
+
+#enhanced theme
+penguins %>%
+  count(species) %>%
+  ggplot(aes(fill = species, values = n)) +
+  geom_waffle(color = "white", flip = TRUE, make_proportional = TRUE) +
+  labs(fill = NULL, title = "Penguin species") +
+  theme_enhance_waffle()
+
+
+```
+```{r quick map}
+library(maps)
+#cartesian
+ggplot(map_data("italy"), aes(long, lat, group = group)) +
+  geom_polygon(fill = "white", color = "#008c45") +labs(x = NULL, y = NULL)
+
+#quickmap
+ggplot(map_data("italy"), aes(long, lat, group = group)) +
+  geom_polygon(fill = "white", color = "#008c45") + labs(x = NULL, y = NULL) +
+  coord_quickmap()
+```
+```{r slide 31}
+library(mapproj)
+ggplot(map_data("county", "illinois"), aes(long, lat, group = group)) +
+     geom_polygon(fill = "gray75", color = "black") + labs(x = NULL, y = NULL) +
+     coord_map()
+
+
+```
 

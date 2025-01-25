@@ -1,0 +1,50 @@
+---
+title: "Homework 1: Data Cleaning, Merging and Aggregation in R"
+author: "Emma Jay"
+date: "January 24, 2025"
+output: pdf_document
+---
+```{r setup}
+#libraries
+library(tidyverse)
+
+#default theme for ggplot2
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 16))
+
+#default parameters for knitr
+knitr::opts_chunk$set(
+  fig.width = 8,
+  fig.asp = 0.618,
+  fig.retina = 2,
+  dpi = 150, 
+  out.width = "70%"
+)
+```
+
+
+## Part I: Survey Data Manipulation
+
+### 1. Exploratory Data Analysis
+
+```{r section 1.1}
+#load data
+gactt_data <- read_csv("data/GACTT_RESULTS_ANONYMIZED_HW1.csv")
+
+#print first 6 rows and last 4 rows
+gactt_data %>%
+  head(6)
+
+gactt_data %>%
+  tail(4)
+
+#print class of each variable
+gactt_data %>%
+  sapply(class)
+
+#plot - relationship between cups and party
+
+gactt_data %>%
+  ggplot(aes(x = party, fill = cups)) +
+  geom_bar(position = "dodge")
+```
+
