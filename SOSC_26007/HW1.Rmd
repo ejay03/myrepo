@@ -65,7 +65,6 @@ zip_codes <- read_csv("data/zip_code_database.csv")
 gactt_zip <- full_join(gactt_data, zip_codes, by = "zip")
 
 #check match using number of NA values - should be same as unmatched zip
-
 table(gactt_zip$zip %in% zip_codes$zip) %>%
   as.data.frame() %>%
   print()
@@ -103,9 +102,10 @@ politic_state <- gactt_zip %>%
   group_by(state, party) %>%
   count() %>%
   group_by(state) %>%
-  mutate(percentage = n / sum(n) * 100) %>%
+  mutate(percentage = (n / sum(n))) %>%
   ungroup () %>%
-  select(state, party, percentage) 
+  select(state, party, percentage) %>%
+  pivot_wider(names_from = party, values_from = percentage, values_fill = list(percentage = 0))
 
 head(politic_state)
 
@@ -120,11 +120,59 @@ head(survey_state)
 ## Part II: Election Data Analysis
 
 ### 1. Cleaning the Election Data
-```{r 3.1}
-#load 2024 election data
+```{r 2.1}
+#1. load 2024 election data
 election_2024 <- read_csv("data/election_2024.csv")
 
-#clean data
+election_2024 %>%
+  sapply(class)
 
+#2. clean data
+clean_election2024 <- election_2024 %>%
+  mutate(
+    harris_votes_share = as.numeric(str_remove_all(harris_votes_share, "%"))/ 100,
+    trump_votes_share = as.numeric(str_remove_all(trump_votes_share, "%")) / 100,
+    other_votes_share = as.numeric(str_remove_all(other_votes_share, "%")) / 100,
+other_ev = as.numeric(other_ev))
+
+sapply(clean_election2024, class)
 ```
+### 2. Merging Survey and Election Data
+```{r 2.2}
+#merge survey_state with election data using state column
+
+#resolve state name issue across data frames
+state_mapping <- data.frame(
+  full_state = c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"),
+  state_abbreviation = c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"))
+
+merge_state <- clean_election2024 %>%
+  left_join(state_mapping, by = c("state" = "full_state")) %>%
+  left_join(survey_state, by = c("state_abbreviation" = "state"))
+
+head(merge_state)
+```
+
+### 3. Comparative Analysis and Visualization
+
+```{r 2.3.1}
+#1. 
+# relationship between Democratic respondents and harris vote share
+
+merge_state %>%
+  ggplot(aes(x = Democrat, y = harris_votes_share)) +
+  geom_point() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Percentage of Democratic Responses and Harris Vote Share by State",
+    x = "Percentage of Democratic Affiliated Respondents",
+    y = "Percent of Harris Vote Share"
+  )
+
+gactt_zip %>%
+  group_by(state) %>%
+  count()
+```
+__Limitations of Data:__ 
 
