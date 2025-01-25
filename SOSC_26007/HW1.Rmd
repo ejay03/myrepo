@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 
 ### 1. Exploratory Data Analysis
 
-```{r section 1.1}
+```{r 1.1}
 #load data
 gactt_data <- read_csv("data/GACTT_RESULTS_ANONYMIZED_HW1.csv")
 
@@ -42,9 +42,89 @@ gactt_data %>%
   sapply(class)
 
 #plot - relationship between cups and party
-
 gactt_data %>%
   ggplot(aes(x = party, fill = cups)) +
-  geom_bar(position = "dodge")
+  geom_bar(position = "dodge") +
+  labs(
+    title = "Daily Coffee Consumption by Political Affiliation",
+    x = "Party Affiliation",
+    y = "Count", 
+    fill = "Daily Cups of Coffee"
+  )
+```
+__Graph Interpretation:__
+The graph shows that Democrats were the most identified with group in the data set, followed by Republicans. In every political affiliation group, two cups of coffee was the most reported daily coffee intake, followed by one and then three (in every category but NA where NA was the third most responded). 
+
+### 2. Merging Survey Data with ZIP Code Metadata
+
+```{r 1.2}
+#load zip code metadata
+zip_codes <- read_csv("data/zip_code_database.csv")
+
+#merge zip column with metadata to include state-level info in survey dataset
+gactt_zip <- full_join(gactt_data, zip_codes, by = "zip")
+
+#check match using number of NA values - should be same as unmatched zip
+
+table(gactt_zip$zip %in% zip_codes$zip) %>%
+  as.data.frame() %>%
+  print()
+
+table(is.na(gactt_zip$state)) %>%
+  as.data.frame() %>%
+  print()
+
+```
+__Number of Unmatched Zip Codes:__ 
+There are 442 unmatched zip codes.
+
+### 3. Aggregation and Insights
+```{r 1.3}
+#calculate average daily coffee consumption (cups) by state
+avg_cups <- gactt_zip %>%
+  mutate(cups = as.numeric(cups)) %>%
+  group_by(state) %>%
+  summarize(average_cups = mean(cups, na.rm = TRUE)) 
+head(avg_cups)
+
+#most preferred homebrew coffee method (home_brew) in each state
+top_homebrew <- gactt_zip %>%
+  filter(!is.na(home_brew)) %>%
+  group_by(state, home_brew) %>%
+  tally() %>%
+  slice_max(order_by = n, n = 1) %>%
+  ungroup() %>%
+  select(state, home_brew)
+
+head(top_homebrew)
+
+#political affiliation breakdown (party) in each state (percentage of respondents identifying with democratic and republican)
+politic_state <- gactt_zip %>%
+  group_by(state, party) %>%
+  count() %>%
+  group_by(state) %>%
+  mutate(percentage = n / sum(n) * 100) %>%
+  ungroup () %>%
+  select(state, party, percentage) 
+
+head(politic_state)
+
+#save aggregated data frame as a variable survey_state
+survey_state <- avg_cups %>%
+  left_join(top_homebrew, by = "state") %>%
+  left_join(politic_state, by = "state")
+
+head(survey_state)
+```
+
+## Part II: Election Data Analysis
+
+### 1. Cleaning the Election Data
+```{r 3.1}
+#load 2024 election data
+election_2024 <- read_csv("data/election_2024.csv")
+
+#clean data
+
 ```
 
