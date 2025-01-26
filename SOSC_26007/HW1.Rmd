@@ -7,6 +7,7 @@ output: pdf_document
 ```{r setup}
 #libraries
 library(tidyverse)
+library(writexl)
 
 #default theme for ggplot2
 ggplot2::theme_set(ggplot2::theme_minimal(base_size = 16))
@@ -157,11 +158,11 @@ head(merge_state)
 
 ```{r 2.3.1}
 #1. 
-# relationship between Democratic respondents and harris vote share
-
+# relationship between Democratic respondents and Harris vote share
 merge_state %>%
   ggplot(aes(x = Democrat, y = harris_votes_share)) +
-  geom_point() +
+  geom_point() +  
+  geom_smooth(method = "lm", color = "purple") +
   scale_x_continuous(labels = scales::percent) +
   scale_y_continuous(labels = scales::percent) +
   labs(
@@ -170,9 +171,80 @@ merge_state %>%
     y = "Percent of Harris Vote Share"
   )
 
-gactt_zip %>%
-  group_by(state) %>%
-  count()
+#Republicans and Trump
+merge_state %>%
+  ggplot(aes(x = Republican, y = trump_votes_share)) +
+  geom_point() +  
+  geom_smooth(method = "lm", color = "red") +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Percentage of Republican Responses and Trump Vote Share by State",
+    x = "Percentage of Republican Affiliated Respondents",
+    y = "Percent of Trump Vote Share"
+  )
+
+#Other and Independent
+merge_state %>%
+  ggplot(aes(x = Independent, y = other_votes_share)) +
+  geom_point() +  
+  geom_smooth(method = "lm", color = "green") +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Percentage of Independent Responses and Other Vote Share by State",
+    x = "Percentage of Independent Affiliated Respondents",
+    y = "Percent of Other Vote Share"
+  )
 ```
 __Limitations of Data:__ 
+The data represented above contains states with limited numbers of respondents overall and high rates of respondents that did not complete the political affiliation question, resulting in an NA value. These limitations could lead to the data being significantly skewed or not representative of the actual state populations. 
+
+```{r 2.3.2}
+#relationship between daily coffee consumption (cups) and voting outcomes
+#harris
+merge_state %>%
+  ggplot(aes(x = average_cups, y = harris_votes_share)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "purple") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Daily Coffee Consumption and Harris Vote Share",
+    x = "Average Daily Coffee Consumption by State (in cups)",
+    y = "Percent of Harris Vote Share"
+  )
+
+#trump
+merge_state %>%
+  ggplot(aes(x = average_cups, y = trump_votes_share)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "red") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Daily Coffee Consumption and Trump Vote Share",
+    x = "Average Daily Coffee Consumption by State (in cups)",
+    y = "Percent of Trump Vote Share"
+  )
+
+#other
+merge_state %>%
+  ggplot(aes(x = average_cups, y = other_votes_share)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "green") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Daily Coffee Consumption and Other Vote Share",
+    x = "Average Daily Coffee Consumption by State (in cups)",
+    y = "Percent of Other Vote Share"
+  )
+```
+__Interpretation:__
+The scatter plots indicate that as the average daily coffee consumption of a state increases, the Harris and Other share of the vote decreases while the Trump vote share increases. Each graph shows a clustering of responses around two cups of coffee on average per day, where the regression line has the smallest standard error compared to either. 1 or 3 cups where the standard error is significantly larger.
+
+### Save Results
+```{r}
+#save final merged dataset with aggregated survey results and election outcomes 
+
+ write_xlsx(merge_state, "overview_hw1.xlsx")
+```
 
