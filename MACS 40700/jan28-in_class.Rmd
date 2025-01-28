@@ -1,0 +1,33 @@
+---
+title: "jan28-in_class"
+output: html_document
+---
+```{r slide 48}
+colorspace::hcl_palettes(type = "sequential", plot = TRUE) # all sequential palettes
+```
+
+```{r slide 49 diverging}
+colorspace::hcl_palettes(type = "diverging", plot = TRUE, n = 9) # all diverging palettes
+```
+
+```{r slide 50 }
+colorspace::divergingx_palettes(plot = TRUE, n = 9) # all divergingx palettes
+```
+
+```{r qualitative}
+colorspace::hcl_palettes(type = "qualitative", plot = TRUE) # all qualitative palettes
+```
+
+##Plotly Party (Today's Lecture)
+
+```{r setup}
+#install.packages("plotly")
+library(tidyverse)
+library(plotly)
+```
+
+```{r plotly example 1}
+fig <- plot_ly(midwest, x = ~percollege, color = ~state, type = "box", height = 250) 
+fig
+```
+
