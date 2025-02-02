@@ -1,0 +1,42 @@
+---
+title: "jan23-in_class"
+output: html_document
+---
+
+# Optimizing Color Spaces 
+
+```{r setup}
+# install.packages(c("here", "colorspace", "scales", "ggthemes", "usethis","cowplot"))
+install.packages("colorblindr")
+ # usethis::use_course("MACS40700/choosing-colors") 
+```
+```{r setup}
+library(tidyverse)
+library(here)
+library(colorspace)   # for improved color palettes
+library(scales)       # for improved labels
+library(ggthemes)     # for scale_color_colorblind()
+
+theme_set(theme_classic(base_size = 14))
+```
+
+```{r color vision deficiency}
+# library(colorblindr) - not working (says no availability for this version of R)
+# cvd_grid(plot = pen_fig)
+```
+
+```{r sequential palettes}
+colorspace::hcl_palettes(type = "sequential", plot = TRUE) # all sequential palettes
+
+```
+
+```{r diverging palettes}
+colorspace::hcl_palettes(type = "diverging", plot = TRUE, n = 9) # all diverging palettes
+
+colorspace::divergingx_palettes(plot = TRUE, n = 9) # all divergingx palettes
+```
+
+```{r qualitative palettes}
+colorspace::hcl_palettes(type = "qualitative", plot = TRUE) # all qualitative palettes
+```
+
