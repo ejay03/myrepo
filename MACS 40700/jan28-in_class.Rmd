@@ -31,3 +31,15 @@ fig <- plot_ly(midwest, x = ~percollege, color = ~state, type = "box", height = 
 fig
 ```
 
+```{r convert ggplot to plotly}
+library(rcis)
+p <- ggplot(scorecard, 
+            aes(x = type, y = avgfacsal)) + 
+  geom_point(alpha = 0.5) + 
+  stat_summary(geom = "point", 
+               fun = "median",   
+               color = "red", size = 5, 
+               pch = 4, stroke = 2)
+ggplotly(p)
+```
+
